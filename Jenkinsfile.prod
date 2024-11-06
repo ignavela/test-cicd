@@ -23,12 +23,8 @@ pipeline {
         stage('Deploy to PROD') {
       steps {
         echo 'Desplegando la imagen de prod...'
-        sh 'docker run -d -p 8080:8080 microservicio-prod:latest'
+        sh 'docker run -d -p 8083:8081 microservicio-prod:latest'
       }
         }
-    }
-
-    triggers {
-        pollSCM('* * * * *')  // Ejecutar cada vez que haya un commit en la rama
     }
 }
