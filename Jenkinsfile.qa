@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        BRANCH_NAME = 'v1.0.0'  // Rama para Prod
-        CONTAINER_NAME = 'microservicio-prod'
+        BRANCH_NAME = 'v2.0.0'  // Rama para QA
+        CONTAINER_NAME = 'microservicio-qa'
     }
 
     stages {
@@ -34,10 +34,10 @@ pipeline {
         }
         }
 
-        stage('Deploy to PROD') {
+        stage('Deploy to QA') {
         steps {
-          echo 'Desplegando la imagen en PROD...'
-          sh 'docker run -d -p 8083:8081 --name ${CONTAINER_NAME} ${CONTAINER_NAME}:latest'
+          echo 'Desplegando la imagen en QA...'
+          sh 'docker run -d -p 8082:8081 --name ${CONTAINER_NAME} ${CONTAINER_NAME}:latest'
         }
         }
     }
