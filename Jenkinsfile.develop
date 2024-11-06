@@ -3,28 +3,42 @@ pipeline {
 
     environment {
         BRANCH_NAME = 'develop'  // Rama para Desarrollo
+        CONTAINER_NAME = 'microservicio-dev'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Stop and Remove Old Container') {
       steps {
-        git branch: "${env.BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+        script {
+          try {
+            // Intentamos detener y eliminar el contenedor antiguo si existe
+            sh 'docker stop ${CONTAINER_NAME} || true' // || true asegura que no falle si no existe
+            sh 'docker rm ${CONTAINER_NAME} || true'   // || true asegura que no falle si no existe
+                    } catch (Exception e) {
+            echo "No existing container found or other error: ${e}"
+          }
+        }
       }
+        }
+        stage('Checkout') {
+        steps {
+          git branch: "${BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+        }
         }
 
         stage('Build Docker Image') {
-      steps {
-        script {
-          def image = docker.build("microservicio-dev", "--tag microservicio-dev:latest --tag microservicio-dev:${env.BUILD_NUMBER} .")
+        steps {
+          script {
+            def image = docker.build("${CONTAINER_NAME}", "--tag ${CONTAINER_NAME}:latest --tag ${CONTAINER_NAME}:${BUILD_NUMBER} .")
+          }
         }
-      }
         }
 
         stage('Deploy to Develop') {
-      steps {
-        echo 'Desplegando la imagen de Desarrollo...'
-        sh 'docker run -d -p 8080:8080 microservicio-dev:latest'
-      }
+        steps {
+          echo 'Desplegando la imagen de Desarrollo...'
+          sh 'docker run -d -p 8081:8081 --name ${CONTAINER_NAME} ${CONTAINER_NAME}:latest'
+        }
         }
     }
 
