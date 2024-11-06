@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        BRANCH_NAME = 'v2.0.0'  // Rama para Desarrollo
+        BRANCH_NAME = 'v2.0.0'  // Rama para QA
         CONTAINER_NAME = 'microservicio-qa'
     }
 
