@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = 'develop'  // Rama para Desarrollo
+    }
+
+    stages {
+        stage('Checkout') {
+      steps {
+        git branch: "${env.BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+      }
+        }
+
+        stage('Build Docker Image') {
+      steps {
+        script {
+          def image = docker.build("microservicio-dev", "--tag microservicio-dev:latest --tag microservicio-dev:${env.BUILD_NUMBER} .")
+        }
+      }
+        }
+
+        stage('Deploy to Develop') {
+      steps {
+        echo 'Desplegando la imagen de Desarrollo...'
+        sh 'docker run -d -p 8080:8080 microservicio-dev:latest'
+      }
+        }
+    }
+
+    triggers {
+        pollSCM('* * * * *')  // Ejecutar cada vez que haya un commit en la rama
+    }
+}

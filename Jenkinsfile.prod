@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = 'v1.0.0'  // Rama para PROD
+    }
+
+    stages {
+        stage('Checkout') {
+      steps {
+        git branch: "${env.BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+      }
+        }
+
+        stage('Build Docker Image') {
+      steps {
+        script {
+          def image = docker.build("microservicio-prod", "--tag microservicio-prod:latest --tag microservicio-prod:${env.BUILD_NUMBER} .")
+        }
+      }
+        }
+
+        stage('Deploy to PROD') {
+      steps {
+        echo 'Desplegando la imagen de prod...'
+        sh 'docker run -d -p 8080:8080 microservicio-prod:latest'
+      }
+        }
+    }
+
+    triggers {
+        pollSCM('* * * * *')  // Ejecutar cada vez que haya un commit en la rama
+    }
+}

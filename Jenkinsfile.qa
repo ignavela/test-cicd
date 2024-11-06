@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = 'v2.0.0'  // Rama para QA
+    }
+
+    stages {
+        stage('Checkout') {
+      steps {
+        git branch: "${env.BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+      }
+        }
+
+        stage('Build Docker Image') {
+      steps {
+        script {
+          def image = docker.build("microservicio-qa", "--tag microservicio-qa:latest --tag microservicio-qa:${env.BUILD_NUMBER} .")
+        }
+      }
+        }
+
+        stage('Deploy to QA') {
+      steps {
+        echo 'Desplegando la imagen de QA...'
+        sh 'docker run -d -p 8080:8080 microservicio-qa:latest'
+      }
+        }
+    }
+
+    triggers {
+        pollSCM('* * * * *')  // Ejecutar cada vez que haya un commit en la rama
+    }
+}
