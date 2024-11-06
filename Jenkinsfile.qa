@@ -42,8 +42,4 @@ pipeline {
         }
     }
 
-    triggers {
-        pollSCM('* * * * *')  // Ejecutar cada vez que haya un commit en la rama
-    }
-
 }
