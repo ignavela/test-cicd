@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        BRANCH_NAME = 'v2.0.0'  // Rama para QA
+        BRANCH_NAME = 'v1.0.0'  // Rama para QA
         DOCKER_IMAGE = 'microservicio-qa'
     }
 
