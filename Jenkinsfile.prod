@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        BRANCH_NAME = 'v1.0.0'  // Rama para Prod
+        BRANCH_NAME = 'develop'  // Rama para Prod
         CONTAINER_NAME = 'microservicio-prod'
     }
 
