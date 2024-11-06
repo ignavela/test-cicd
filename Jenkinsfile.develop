@@ -37,7 +37,7 @@ pipeline {
         stage('Deploy to Develop') {
         steps {
           echo 'Desplegando la imagen de Desarrollo...'
-          sh 'docker run -d -p 8081:8081 ${CONTAINER_NAME}:latest'
+          sh 'docker run -d -p 8081:8081 --name ${CONTAINER_NAME} ${CONTAINER_NAME}:latest'
         }
         }
     }
