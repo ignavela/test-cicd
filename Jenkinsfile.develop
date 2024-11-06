@@ -3,19 +3,38 @@ pipeline {
 
     environment {
         BRANCH_NAME = 'develop'  // Rama para Desarrollo
+        CONTAINER_NAME = 'microservicio-dev'
     }
+
+    stage('Stop and Remove Old Container') {
+            steps {
+                script {
+                    // Detener el contenedor si está en ejecución
+                    sh """
+                        if docker ps -q -f name=${CONTAINER_NAME}; then
+                            docker stop ${CONTAINER_NAME}
+                        fi
+                    """
+                    // Eliminar el contenedor detenido
+                    sh """
+                        if docker ps -aq -f name=${CONTAINER_NAME}; then
+                            docker rm ${CONTAINER_NAME}
+                        fi
+                    """
+                }
+            }
 
     stages {
         stage('Checkout') {
       steps {
-        git branch: "${env.BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+        git branch: "${BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
       }
         }
 
         stage('Build Docker Image') {
       steps {
         script {
-          def image = docker.build("microservicio-dev", "--tag microservicio-dev:latest --tag microservicio-dev:${env.BUILD_NUMBER} .")
+          def image = docker.build("${CONTAINER_NAME}", "--tag ${CONTAINER_NAME}:latest --tag ${CONTAINER_NAME}:${BUILD_NUMBER} .")
         }
       }
         }
@@ -23,7 +42,7 @@ pipeline {
         stage('Deploy to Develop') {
       steps {
         echo 'Desplegando la imagen de Desarrollo...'
-        sh 'docker run -d -p 8081:8081 microservicio-dev:latest'
+        sh 'docker run -d -p 8081:8081 ${CONTAINER_NAME}:latest'
       }
         }
     }
