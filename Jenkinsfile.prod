@@ -3,32 +3,68 @@ pipeline {
 
     environment {
         BRANCH_NAME = 'v1.0.0'  // Rama para PROD
+        DOCKER_IMAGE = 'microservicio-prod'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Stop and Remove Old Container') {
       steps {
-        git branch: "${env.BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+        script {
+          try {
+            // Intentamos detener y eliminar el contenedor antiguo si existe
+            sh 'docker stop ${DOCKER_IMAGE} || true' // || true asegura que no falle si no existe
+            sh 'docker rm ${DOCKER_IMAGE} || true'   // || true asegura que no falle si no existe
+                    } catch (Exception e) {
+            echo "No existing container found or other error: ${e}"
+          }
+        }
       }
+        }
+        stage('Checkout') {
+        steps {
+          git branch: "${BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+        }
         }
 
         stage('Build Docker Image') {
       steps {
         script {
-          def image = docker.build("microservicio-prod", "--tag microservicio-prod:latest --tag microservicio-prod:${env.BUILD_NUMBER} .")
+          // Construir la imagen Docker
+          def buildNumber = env.BUILD_NUMBER
+          docker.build("${DOCKER_IMAGE}:${buildNumber}")
+          docker.build("${DOCKER_IMAGE}:latest")
         }
       }
         }
 
         stage('Deploy to PROD') {
+        steps {
+          echo 'Desplegando la imagen en PROD...'
+          sh 'docker run -d -p 8083:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
+        }
+        }
+
+        stage('Cleanup Old Docker Images') {
       steps {
-        echo 'Desplegando la imagen de prod...'
-        sh 'docker run -d -p 8080:8080 microservicio-prod:latest'
+        script {
+          // Mantener las últimas 5 imágenes y eliminar las anteriores
+          def images = sh(
+                        script: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '^${DOCKER_IMAGE}' | sort -r | tail -n +6",
+                        returnStdout: true
+                    ).trim()
+
+          if (images) {
+            // Convertir la lista de imágenes a una lista de strings y eliminar
+            def oldImages = images.split('\n')
+            oldImages.each { image ->
+              def imageName = image.split(' ')[0]
+              sh "docker rmi -f ${imageName}"
+            }
+                    } else {
+            echo 'No old images to remove.'
+          }
+        }
       }
         }
-    }
-
-    triggers {
-        pollSCM('* * * * *')  // Ejecutar cada vez que haya un commit en la rama
     }
 }
