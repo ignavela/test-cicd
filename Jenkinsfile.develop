@@ -10,18 +10,13 @@ pipeline {
         stage('Stop and Remove Old Container') {
       steps {
         script {
-          // Detener el contenedor si está en ejecución
-          sh """
-                        if docker ps -q -f name=${CONTAINER_NAME}; then
-                            docker stop ${CONTAINER_NAME}
-                        fi
-                    """
-          // Eliminar el contenedor detenido
-          sh """
-                        if docker ps -aq -f name=${CONTAINER_NAME}; then
-                            docker rm ${CONTAINER_NAME}
-                        fi
-                    """
+          try {
+            // Intentamos detener y eliminar el contenedor antiguo si existe
+            sh 'docker stop ${CONTAINER_NAME} || true' // || true asegura que no falle si no existe
+            sh 'docker rm ${CONTAINER_NAME} || true'   // || true asegura que no falle si no existe
+                    } catch (Exception e) {
+            echo "No existing container found or other error: ${e}"
+          }
         }
       }
         }
