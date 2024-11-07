@@ -7,6 +7,25 @@ pipeline {
     }
 
     stages {
+      stage('Check if Docker Image Needs to be Built') {
+      steps {
+        script {
+          // Obtener el hash del último commit
+          def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+
+          // Comparar con el hash guardado de la última imagen creada
+          def previousCommit = sh(script: "docker inspect --format='{{index .Config.Labels \"commit\"}}' ${DOCKER_IMAGE}:latest || echo ''", returnStdout: true).trim()
+
+          if (latestCommit == previousCommit) {
+            echo 'No changes detected since the last Docker image build. Skipping Docker build.'
+            currentBuild.result = 'SUCCESS'
+            return // Detener la ejecución del pipeline
+                    } else {
+            echo 'Changes detected. Proceeding to build the Docker image.'
+          }
+        }
+      }
+      }
         stage('Stop and Remove Old Container') {
       steps {
         script {
@@ -29,10 +48,14 @@ pipeline {
         stage('Build Docker Image') {
       steps {
         script {
-          // Construir la imagen Docker
-          def buildNumber = env.BUILD_NUMBER
-          docker.build("${DOCKER_IMAGE}:${buildNumber}")
+          // Construir la imagen de Docker y etiquetar con el último commit
+          def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+          docker.build("${DOCKER_IMAGE}:${latestCommit}")
           docker.build("${DOCKER_IMAGE}:latest")
+
+          // Etiquetar la imagen con el hash del commit
+          sh "docker tag ${DOCKER_IMAGE}:${latestCommit} ${DOCKER_IMAGE}:latest"
+          sh "docker rmi ${DOCKER_IMAGE}:${latestCommit}" // Opcional: eliminar la imagen etiquetada con el hash del commit
         }
       }
         }
