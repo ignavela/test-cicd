@@ -15,7 +15,7 @@ pipeline {
 
             // Obtener el commit hash de la imagen etiquetada con el último commit (no la imagen 'latest')
             def currentCommit = sh(script: """
-                docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '${DOCKER_IMAGE}' | grep -v 'latest' | sort -r | head -n 1 | awk '{print \$2}'
+              docker inspect --format='{{index .Config.Labels "commit"}}' ${DOCKER_IMAGE}:${latestCommit}
             """, returnStdout: true).trim()
 
             // Si no hay ninguna imagen anterior o si la última imagen tiene el mismo commit, salimos
