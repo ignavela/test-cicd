@@ -64,7 +64,7 @@ pipeline {
           if (shouldProceed) {
             // Construir la imagen de Docker y etiquetar con el último commit
             def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-            sh "docker build . -t ${DOCKER_IMAGE}:${latestCommit}"
+            sh "docker build . ${DOCKER_IMAGE}:${latestCommit}"
             sh "docker run -d -p 8083:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${latestCommit}"
                     } else {
             echo 'Skipping stage because Docker image already exists.'
