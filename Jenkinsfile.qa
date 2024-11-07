@@ -50,7 +50,6 @@ pipeline {
         script {
           // Construir la imagen de Docker y etiquetar con el último commit
           def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-          docker.build("${DOCKER_IMAGE}:${latestCommit}")
           docker.build("${DOCKER_IMAGE}:latest")
 
           // Etiquetar la imagen con el hash del commit
