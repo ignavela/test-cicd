@@ -64,7 +64,7 @@ pipeline {
           if (shouldProceed) {
             // Construir la imagen de Docker y etiquetar con el último commit
             def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-            sh "docker build . ${DOCKER_IMAGE}:${latestCommit}"
+            sh "docker build . -t ${DOCKER_IMAGE}:${latestCommit}"
             sh "docker run -d -p 8083:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${latestCommit}"
                     } else {
             echo 'Skipping stage because Docker image already exists.'
@@ -74,27 +74,28 @@ pipeline {
         }
 
         stage('Cleanup Old Docker Images') {
+      when {
+        expression { shouldProceed }
+      }
       steps {
         script {
-          if (shouldProceed) {
-            // Mantener las últimas 5 imágenes y eliminar las anteriores
-            def images = sh(
-                            script: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '^${DOCKER_IMAGE}' | sort -r | tail -n +6",
-                            returnStdout: true
-                        ).trim()
+          // Obtener el hash del último commit
+          def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+          // Mantener las últimas 5 imágenes y eliminar las anteriores
+          def images = sh(
+                        script: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '^${DOCKER_IMAGE}' | grep -v '${latestCommit}' | sort -r | tail -n +6",
+                        returnStdout: true
+                    ).trim()
 
-            if (images) {
-              // Convertir la lista de imágenes a una lista de strings y eliminar
-              def oldImages = images.split('\n')
-              oldImages.each { image ->
-                def imageName = image.split(' ')[0]
-                sh "docker rmi -f ${imageName}"
-              }
-                        } else {
-              echo 'No old images to remove.'
+          if (images) {
+            // Convertir la lista de imágenes a una lista de strings y eliminar
+            def oldImages = images.split('\n')
+            oldImages.each { image ->
+              def imageName = image.split(' ')[0]
+              sh "docker rmi -f ${imageName}"
             }
                     } else {
-            echo 'Skipping cleanup of old Docker images.'
+            echo 'No old images to remove.'
           }
         }
       }
