@@ -38,6 +38,24 @@ pipeline {
       }
         }
 
+        stage('Stop and Remove Old Container') {
+      steps {
+        script {
+          if (shouldProceed) {
+            try {
+              // Intentamos detener y eliminar el contenedor antiguo si existe
+              sh 'docker stop --time=10 ${DOCKER_IMAGE} || true' // || true asegura que no falle si no existe
+              sh 'docker rm ${DOCKER_IMAGE} || true'   // || true asegura que no falle si no existe
+                    } catch (Exception e) {
+              echo "No existing container found or other error: ${e}"
+            }
+          } else {
+            echo 'Skipping stage because Docker image already exists.'
+          }
+        }
+      }
+        }
+
         stage('Build Docker Image') {
       steps {
         script {
@@ -46,7 +64,7 @@ pipeline {
             def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             sh "docker build . -t ${DOCKER_IMAGE}:latest -t ${DOCKER_IMAGE}:${latestCommit}"
                     } else {
-            echo 'Skipping Docker build.'
+            echo 'Skipping stage because Docker image already exists.'
           }
         }
       }
@@ -57,9 +75,9 @@ pipeline {
         script {
           if (shouldProceed) {
             echo 'Desplegando la imagen en PROD...'
-            sh 'docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
+            sh 'docker run -d -p 8083:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
                     } else {
-            echo 'Skipping deployment to PROD.'
+            echo 'Skipping deployment to PROD because docker image already exists.'
           }
         }
       }
