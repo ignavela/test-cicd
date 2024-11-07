@@ -13,67 +13,63 @@ pipeline {
       }
         }
 
-        stage('Check if Docker Image Needs to be Built') {
+        stage('Check if Docker Image Needs to be Deployed') {
       steps {
         script {
           // Obtener el hash del último commit
           def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
           echo "Latest Commit: ${latestCommit}"
-
-          // Verificar si existe una imagen con el tag del último commit
-          def imageExists = sh(
-                        script: "docker images --format '{{.Repository}}:{{.Tag}}' | grep '${DOCKER_IMAGE}:${latestCommit}' || true",
+          // Obtener la imagen actualmente ejecutándose
+          def runningImage = sh(
+                        script: "docker inspect --format='{{.Config.Image}}' ${DOCKER_IMAGE} || echo ''",
                         returnStdout: true
                     ).trim()
 
-          if (imageExists) {
-            echo 'Docker image already exists for this commit. Skipping Docker build.'
+          // Construir el nombre de la imagen objetivo
+          def targetImage = "${DOCKER_IMAGE}:${latestCommit}"
+
+          if (runningImage == targetImage) {
+            echo "The Docker image ${targetImage} is already running. Skipping deploy."
             currentBuild.description = "Skipped build: ${latestCommit}"
             shouldProceed = false
                     } else {
-            echo 'No Docker image found for this commit. Proceeding to build the Docker image.'
+            echo "The Docker image ${targetImage} is not running. Proceeding to deploy."
+            shouldProceed = true
           }
         }
       }
         }
 
         stage('Stop and Remove Old Container') {
-      when {
-        expression { shouldProceed }
-      }
       steps {
         script {
-          try {
-            // Intentamos detener y eliminar el contenedor antiguo si existe
-            sh 'docker stop --time=10 ${DOCKER_IMAGE} || true' // || true asegura que no falle si no existe
-            sh 'docker rm ${DOCKER_IMAGE} || true'   // || true asegura que no falle si no existe
+          if (shouldProceed) {
+            try {
+              // Intentamos detener y eliminar el contenedor antiguo si existe
+              sh 'docker stop --time=10 ${DOCKER_IMAGE} || true' // || true asegura que no falle si no existe
+              sh 'docker rm ${DOCKER_IMAGE} || true'   // || true asegura que no falle si no existe
                     } catch (Exception e) {
-            echo "No existing container found or other error: ${e}"
+              echo "No existing container found or other error: ${e}"
+            }
+          } else {
+            echo 'Skipping stage because Docker image already exists.'
           }
         }
       }
         }
 
-        stage('Build Docker Image') {
-      when {
-        expression { shouldProceed }
-      }
+        stage('Build and deploy Docker Image to QA') {
       steps {
         script {
-          // Construir la imagen de Docker y etiquetar con el último commit
-          def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-          sh "docker build . -t ${DOCKER_IMAGE}:latest -t ${DOCKER_IMAGE}:${latestCommit}"
+          if (shouldProceed) {
+            // Construir la imagen de Docker y etiquetar con el último commit
+            def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+            sh "docker build . -t ${DOCKER_IMAGE}:${latestCommit}"
+            sh "docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:${latestCommit}"
+                    } else {
+            echo 'Skipping stage because Docker image already exists.'
+          }
         }
-      }
-        }
-
-        stage('Deploy to QA') {
-      when {
-        expression { shouldProceed }
-      }
-      steps {
-        echo 'Desplegando la imagen en QA...'
-        sh 'docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
       }
         }
 
