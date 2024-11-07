@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        BRANCH_NAME = 'v1.0.0'  // Rama para PROD
+        BRANCH_NAME = 'v2.0.0'  // Rama para PROD
         DOCKER_IMAGE = 'microservicio-prod'
     }
 
