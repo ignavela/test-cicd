@@ -25,8 +25,8 @@ pipeline {
                 return // Detener la ejecución del pipeline
             } else {
                 echo 'Changes detected. Proceeding to build the Docker image.'
-                sh 'echo "Latest Commit: $latestCommit"'
-                sh 'echo "Current Commit: $currentCommit"'
+                echo "Latest Commit: $latestCommit"
+                echo "Current Commit: $currentCommit"
             }
         }
       }
