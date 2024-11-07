@@ -53,7 +53,7 @@ pipeline {
           docker.build("${DOCKER_IMAGE}:latest")
 
           // Etiquetar la imagen con el hash del commit
-          sh "docker tag ${DOCKER_IMAGE}:${latestCommit} ${DOCKER_IMAGE}:latest"
+          sh "docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:${latestCommit}"
         }
       }
         }
