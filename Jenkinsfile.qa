@@ -16,8 +16,8 @@ pipeline {
         stage('Check if Docker Image Needs to be Built') {
       steps {
         script {
-            // Obtener el hash del último commit
-            def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+          // Obtener el hash del último commit
+          def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
           echo "Latest Commit: ${latestCommit}"
 
           // Verificar si existe una imagen con el tag del último commit
@@ -28,8 +28,8 @@ pipeline {
 
           if (imageExists) {
             echo 'Docker image already exists for this commit. Skipping Docker build.'
-            currentBuild.result = 'ABORTED'
-            error('Pipeline aborted because the Docker image already exists.')
+            currentBuild.description = "Skipped build: ${latestCommit}"
+            shouldProceed = false
                     } else {
             echo 'No Docker image found for this commit. Proceeding to build the Docker image.'
           }
@@ -38,6 +38,9 @@ pipeline {
         }
 
         stage('Stop and Remove Old Container') {
+      when {
+        expression { shouldProceed }
+      }
       steps {
         script {
           try {
@@ -52,6 +55,9 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+      when {
+        expression { shouldProceed }
+      }
       steps {
         script {
           // Construir la imagen de Docker y etiquetar con el último commit
@@ -62,6 +68,9 @@ pipeline {
         }
 
         stage('Deploy to QA') {
+      when {
+        expression { shouldProceed }
+      }
       steps {
         echo 'Desplegando la imagen en QA...'
         sh 'docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
@@ -69,6 +78,9 @@ pipeline {
         }
 
         stage('Cleanup Old Docker Images') {
+      when {
+        expression { shouldProceed }
+      }
       steps {
         script {
           // Obtener el hash del último commit
