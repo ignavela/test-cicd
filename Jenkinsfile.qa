@@ -7,7 +7,7 @@ pipeline {
     }
 
     stages {
-      stage('Check if Docker Image Needs to be Built') {
+        stage('Check if Docker Image Needs to be Built') {
       steps {
         script {
           // Obtener el hash del último commit
@@ -25,7 +25,7 @@ pipeline {
           }
         }
       }
-      }
+        }
         stage('Stop and Remove Old Container') {
       steps {
         script {
@@ -40,11 +40,10 @@ pipeline {
       }
         }
         stage('Checkout') {
-        steps {
-          git branch: "${BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+      steps {
+        git branch: "${BRANCH_NAME}", url: 'https://github.com/ignavela/test-cicd.git'
+      }
         }
-        }
-
         stage('Build Docker Image') {
       steps {
         script {
@@ -54,20 +53,18 @@ pipeline {
         }
       }
         }
-
         stage('Deploy to QA') {
-        steps {
-          echo 'Desplegando la imagen en QA...'
-          sh 'docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
+      steps {
+        echo 'Desplegando la imagen en QA...'
+        sh 'docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
+      }
         }
-        }
-
         stage('Cleanup Old Docker Images') {
       steps {
         script {
           // Mantener las últimas 5 imágenes y eliminar las anteriores
           def images = sh(
-                        script: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '^${DOCKER_IMAGE}' | sort -r | tail -n +6",
+                        script: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '^${DOCKER_IMAGE}' | grep -v '${latestCommit}' | sort -r | tail -n +6",
                         returnStdout: true
                     ).trim()
 
