@@ -55,7 +55,6 @@ pipeline {
 
           // Etiquetar la imagen con el hash del commit
           sh "docker tag ${DOCKER_IMAGE}:${latestCommit} ${DOCKER_IMAGE}:latest"
-          sh "docker rmi ${DOCKER_IMAGE}:${latestCommit}" // Opcional: eliminar la imagen etiquetada con el hash del commit
         }
       }
         }
