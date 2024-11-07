@@ -13,25 +13,27 @@ pipeline {
       }
         }
 
-        stage('Check if Docker Image Needs to be Built') {
+        stage('Check if Docker Image Needs to be Deployed') {
       steps {
         script {
           // Obtener el hash del último commit
           def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
           echo "Latest Commit: ${latestCommit}"
-
-          // Verificar si existe una imagen con el tag del último commit
-          def imageExists = sh(
-                        script: "docker images --format '{{.Repository}}:{{.Tag}}' | grep '${DOCKER_IMAGE}:${latestCommit}' || true",
+          // Obtener la imagen actualmente ejecutándose
+          def runningImage = sh(
+                        script: "docker inspect --format='{{.Config.Image}}' ${DOCKER_IMAGE} || echo ''",
                         returnStdout: true
                     ).trim()
 
-          if (imageExists) {
-            echo 'Docker image already exists for this commit. Skipping Docker build.'
+          // Construir el nombre de la imagen objetivo
+          def targetImage = "${DOCKER_IMAGE}:${latestCommit}"
+
+          if (runningImage == targetImage) {
+            echo "The Docker image ${targetImage} is already running. Skipping deploy."
             currentBuild.description = "Skipped build: ${latestCommit}"
             shouldProceed = false
                     } else {
-            echo 'No Docker image found for this commit. Proceeding to build the Docker image.'
+            echo "The Docker image ${targetImage} is not running. Proceeding to deploy."
             shouldProceed = true
           }
         }
