@@ -28,9 +28,9 @@ pipeline {
 
           if (imageExists) {
             echo 'Docker image already exists for this commit. Skipping Docker build.'
-                currentBuild.result = 'SUCCESS'
-                return // Detener la ejecución del pipeline
-            } else {
+            currentBuild.result = 'ABORTED'
+            error('Pipeline aborted because the Docker image already exists.')
+                    } else {
             echo 'No Docker image found for this commit. Proceeding to build the Docker image.'
           }
         }
