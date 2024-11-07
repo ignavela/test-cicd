@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        BRANCH_NAME = 'v2.0.0'  // Rama para QA
-        DOCKER_IMAGE = 'microservicio-qa'
+        BRANCH_NAME = 'v2.0.0'  // Rama para PROD
+        DOCKER_IMAGE = 'microservicio-prod'
     }
 
     stages {
@@ -52,14 +52,14 @@ pipeline {
       }
         }
 
-        stage('Deploy to QA') {
+        stage('Deploy to PROD') {
       steps {
         script {
           if (shouldProceed) {
-            echo 'Desplegando la imagen en QA...'
+            echo 'Desplegando la imagen en PROD...'
             sh 'docker run -d -p 8082:8081 --name ${DOCKER_IMAGE} ${DOCKER_IMAGE}:latest'
                     } else {
-            echo 'Skipping deployment to QA.'
+            echo 'Skipping deployment to PROD.'
           }
         }
       }
