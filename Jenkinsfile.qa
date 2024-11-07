@@ -31,7 +31,7 @@ pipeline {
         script {
           try {
             // Intentamos detener y eliminar el contenedor antiguo si existe
-            sh 'docker stop ${DOCKER_IMAGE} || true' // || true asegura que no falle si no existe
+            sh 'docker stop  --time=10 ${DOCKER_IMAGE} || true' // || true asegura que no falle si no existe
             sh 'docker rm ${DOCKER_IMAGE} || true'   // || true asegura que no falle si no existe
                     } catch (Exception e) {
             echo "No existing container found or other error: ${e}"
