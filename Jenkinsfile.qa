@@ -14,17 +14,19 @@ pipeline {
             def latestCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
 
             // Obtener el commit hash de la imagen etiquetada con el último commit (no la imagen 'latest')
-            def previousCommit = sh(script: """
+            def currentCommit = sh(script: """
                 docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep '${DOCKER_IMAGE}' | grep -v 'latest' | sort -r | head -n 1 | awk '{print \$2}'
             """, returnStdout: true).trim()
 
             // Si no hay ninguna imagen anterior o si la última imagen tiene el mismo commit, salimos
-            if (previousCommit == latestCommit) {
+            if (currentCommit == latestCommit) {
                 echo 'No changes detected since the last Docker image build. Skipping Docker build.'
                 currentBuild.result = 'SUCCESS'
                 return // Detener la ejecución del pipeline
             } else {
                 echo 'Changes detected. Proceeding to build the Docker image.'
+                echo 'Latest Commit: ${latestCommit}'
+                echo 'Current Commit: ${currentCommit}'
             }
         }
       }
